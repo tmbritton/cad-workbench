@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+
+# Generated geometry and renders. Everything here is reproducible with
+# `mise build <project>`, and STL/STEP diffs are worthless in review.
+exports/
