@@ -25,9 +25,9 @@ raw_args = true
 run = "uv run python tools/build.py"
 
 [tasks.test]
-description = "Build every project and run every model's check()"
+description = "Build a project's models and run their check() — omit the name to test all"
 raw_args = true
-run = "uv run pytest -q"
+run = "uv run python tools/test.py"
 
 [tasks.watch]
 description = "Live-reloading browser viewer for one project at localhost:32323"

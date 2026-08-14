@@ -23,16 +23,23 @@ exports/             generated; gitignored in full
 | `mise build <project>` | build one project into `exports/<project>/` |
 | `mise build <project> <model>` | build one model |
 | `mise test` | build everything and run every `check()`, plus mesh validation |
+| `mise test <project> [model]` | the same, scoped to one project |
 | `mise watch <project> [model]` | live viewer at localhost:32323, rebuilds on save |
 | `mise render <project> [model]` | PNG views of the exported STLs, no GPU needed |
 | `mise new <project> [model]` | scaffold a project folder |
 | `mise fmt` | ruff format and lint |
 
-`-n` / `--dry-run` on `build` checks without writing.
+`-n` / `--dry-run` on `build` checks without writing. Flags after the names on
+`mise test` pass through to pytest (`mise test dehydrator-riser -x`).
 
 Running a model file directly (`python projects/x/thing.py`) does the same
 thing for one model — it goes through the same code path, so the two cannot
 drift.
+
+**Projects do not block each other.** `mise build` attempts every model even
+after one fails and still exports the ones that worked; `mise build <project>`
+and `mise test <project>` ignore everything outside that project entirely. A
+half-finished model in one project is never a reason to be stuck in another.
 
 ## The model contract
 

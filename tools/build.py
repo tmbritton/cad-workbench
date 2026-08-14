@@ -47,23 +47,24 @@ def build_project(project: Path, only: list[str], write: bool) -> tuple[int, int
             return 0, len(missing)
         candidates = [p for p in candidates if p.stem in wanted]
 
-    # Flushed, because failures below go to stderr as they happen while the
-    # results table is printed at the end. Without this the header lands after
-    # its own errors whenever stdout is piped.
-    print(f"{GREY}{project.name}{OFF}", flush=True)
+    print(f"{GREY}{project.name}{OFF}")
 
     results: list = []
-    failed = 0
+    failures: list[str] = []
     skipped: list[str] = []
 
+    # Every model is attempted even after one fails, so a half-finished part in
+    # a project does not stop the rest of it from exporting. Failures are
+    # collected rather than printed as they happen, so the report stays in one
+    # readable block; tracebacks still go to stderr as they occur, since by
+    # then ordering is the least of the problems.
     with project_path(project):
         for path in candidates:
             try:
                 module = load(path.stem)
             except Exception:
-                print(f"{RED}FAIL{OFF} {path.stem}: import failed", file=sys.stderr)
+                failures.append(f"{path.stem}: import failed")
                 traceback.print_exc()
-                failed += 1
                 continue
 
             if not is_model(module):
@@ -82,25 +83,27 @@ def build_project(project: Path, only: list[str], write: bool) -> tuple[int, int
                     )
                 )
             except AssertionError as exc:
-                print(f"{RED}FAIL{OFF} {path.stem}: {exc}", file=sys.stderr)
-                failed += 1
-            except Exception:
-                print(f"{RED}FAIL{OFF} {path.stem}: build raised", file=sys.stderr)
+                failures.append(f"{path.stem}: {exc}")
+            except Exception as exc:
+                failures.append(f"{path.stem}: build raised {type(exc).__name__}")
                 traceback.print_exc()
-                failed += 1
 
     width = max((len(r.name) for r in results), default=0)
+    width = max([width, *(len(f.split(":", 1)[0]) for f in failures)], default=0)
     for result in results:
         print(f"  {GREEN}ok{OFF}   {result.line(width)}")
         for warning in result.warnings:
             print(f"  {YELLOW}warn{OFF} {result.name}: {warning}")
+    for failure in failures:
+        name, _, detail = failure.partition(": ")
+        print(f"  {RED}FAIL{OFF} {name:<{width}}  {detail}")
 
     if skipped:
         print(f"  {GREY}helpers, not exported: {', '.join(skipped)}{OFF}")
     if results and write:
         print(f"  {GREY}-> {(EXPORTS / project.name).relative_to(ROOT)}/{OFF}")
 
-    return len(results), failed
+    return len(results), len(failures)
 
 
 def main() -> int:
@@ -140,7 +143,7 @@ def main() -> int:
         failed += f
 
     if failed:
-        print(f"\n{RED}{failed} failed{OFF}, {built} built", file=sys.stderr)
+        print(f"\n{RED}{failed} failed{OFF}, {built} built")
         return 1
     return 0
 
