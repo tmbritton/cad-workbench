@@ -1,7 +1,7 @@
 """Corner test coupon for the riser collar.
 
 One corner of the real part, cut out and truncated, so the fit can be checked
-before committing ~163 g of ASA and several hours to the full collar.
+before committing ~170 g of ASA and several hours to the full collar.
 
 Trimmed in two directions. In plan it keeps one corner plus a straight run either
 side; in height it stops once the male section has reached its engaged length,
@@ -25,20 +25,16 @@ What a successful coupon proves:
      but any droop lands directly on the surface the collar seats on, so it is
      worth a straightedge.
 
-    mise run coupon
+    mise build dehydrator-riser coupon
 """
 
-from pathlib import Path
+import collar
+from build123d import Align, Box, Pos
 
-from build123d import Align, Axis, Box, Plane, Pos, export_step, export_stl
+from cadkit import cavity_ceiling, single_solid
+from cadkit.materials import ASA
 
-from collar import (
-    FEM_OUTER_X,
-    FEM_OUTER_Y,
-    SOCKET_D,
-    STEP_Z,
-    build,
-)
+MATERIAL = ASA
 
 # Straight run to keep on each side, measured inward from the outer corner.
 # Enough to register flat against the tray on both axes; the corner arc itself
@@ -49,67 +45,53 @@ LENGTH = 60.0
 # SOCKET_D of it, so that is the entire engaged length and everything above is
 # plain wall that tests nothing. Truncating there is exact, not an
 # approximation: the cut face is the same 1.8 mm annulus as the real top.
-MALE_KEEP = SOCKET_D
-COUPON_H = STEP_Z + MALE_KEEP
-
-ASA_DENSITY = 1.07  # g/cm3
+MALE_KEEP = collar.SOCKET_D
+COUPON_H = collar.STEP_Z + MALE_KEEP
 
 
-def build_coupon():
+def build():
     """The collar, intersected with a box over one corner.
 
     Algebra mode: solids are values, so `&` is just intersection. Same kernel as
     the builder-mode code in collar.py, and the two mix freely.
     """
-    collar = build().part
+    part = collar.build(male_h=MALE_KEEP).part
 
-    x0 = FEM_OUTER_X / 2 - LENGTH
-    y0 = FEM_OUTER_Y / 2 - LENGTH
+    x0 = collar.FEM_OUTER_X / 2 - LENGTH
+    y0 = collar.FEM_OUTER_Y / 2 - LENGTH
 
-    # Oversized in +X/+Y so those cuts land outside the part; in Z it stops at
-    # COUPON_H, truncating the male section to its engaged length.
+    # Oversized in +X/+Y so those cuts land outside the part; in Z it clears the
+    # already-truncated top, so height comes from MALE_KEEP alone.
     window = Pos(x0, y0, -1) * Box(
         LENGTH + 20,
         LENGTH + 20,
-        COUPON_H + 1,
+        COUPON_H + 2,
         align=(Align.MIN, Align.MIN, Align.MIN),
     )
 
-    return collar & window
+    return part & window
 
 
-if __name__ == "__main__":
-    part = build_coupon()
-
-    solids = part.solids()
-    assert len(solids) == 1, f"expected one connected solid, got {len(solids)}"
+def check(part) -> None:
+    single_solid(part)
 
     # The cavity must survive the cut at its full depth, or the coupon proves
     # nothing about the seat — the whole reason it exists.
-    ceiling = next(
-        f.center().Z
-        for f in part.faces().filter_by(Plane.XY).sort_by(Axis.Z)
-        if f.center().Z > 1e-6
-    )
-    assert abs(ceiling - SOCKET_D) < 1e-6, (
-        f"coupon cavity is {ceiling:.2f} mm, expected {SOCKET_D:.2f}"
+    ceiling = cavity_ceiling(part)
+    assert abs(ceiling - collar.SOCKET_D) < 1e-6, (
+        f"coupon cavity is {ceiling:.2f} mm, expected {collar.SOCKET_D:.2f}"
     )
 
     size = part.bounding_box().size
-    vol = part.volume / 1000
-    full = build().part.volume / 1000
+    assert abs(size.Z - COUPON_H) < 1e-6, (
+        f"stands {size.Z:.2f} mm tall, wanted {COUPON_H:.2f}"
+    )
+    assert abs(size.X - LENGTH) < 1e-6 and abs(size.Y - LENGTH) < 1e-6, (
+        f"footprint {size.X:.2f} x {size.Y:.2f}, wanted {LENGTH:.2f} square"
+    )
 
-    assert abs(size.Z - COUPON_H) < 1e-6, f"height {size.Z:.2f}, wanted {COUPON_H:.2f}"
 
-    print(f"solids       : {len(solids)}")
-    print(f"bounding box : {size.X:.1f} x {size.Y:.1f} x {size.Z:.1f} mm")
-    print(f"male kept    : {MALE_KEEP:.0f} mm  (the full engaged length)")
-    print(f"volume       : {vol:,.1f} cm3   ({vol / full:.0%} of the full collar)")
-    print(f"ASA mass     : {vol * ASA_DENSITY:.0f} g")
-    print(f"socket cavity: {ceiling:.1f} mm deep  (must seat flush)")
+if __name__ == "__main__":
+    from cadkit import cli
 
-    out = Path(__file__).parent
-    export_stl(part, str(out / "coupon.stl"))
-    export_step(part, str(out / "coupon.step"))
-    print(f"exported     : {out / 'coupon.stl'}")
-    print(f"               {out / 'coupon.step'}")
+    raise SystemExit(cli(build, check))

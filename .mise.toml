@@ -6,33 +6,47 @@ uv = "latest"
 # uv sync creates and manages .venv using the python above.
 UV_PROJECT_ENVIRONMENT = ".venv"
 
+# Puts cadkit on the path for every invocation, including running a model file
+# directly. Cheaper than making the workspace an installable package, and it
+# keeps `python projects/x/thing.py` working with no editable install to forget
+# to refresh.
+PYTHONPATH = "{{config_root}}"
+
 [tasks.setup]
 description = "Install/refresh Python dependencies"
 run = "uv sync"
 
+# raw_args on the tasks below so argparse owns the CLI: `mise build -h`,
+# `mise build riser collar -n` and friends pass through untouched.
+
 [tasks.build]
-description = "Build the collar; exports STL and STEP into model/"
-run = "uv run python model/collar.py"
+description = "Build a project's models into exports/<project>/ — omit the name to build all"
+raw_args = true
+run = "uv run python tools/build.py"
 
-[tasks.ring]
-description = "Full-perimeter fit test at reduced height; exports ring.stl and .step"
-run = "uv run python model/ring.py"
-
-[tasks.coupon]
-description = "Build the corner test coupon; exports coupon.stl and .step"
-run = "uv run python model/coupon.py"
-
-[tasks.render]
-description = "Render the STL to PNGs in model/renders/ (no GPU needed)"
-run = "uv run python tools/render.py"
-
-[tasks.docs]
-description = "Serve lessons and reference sheets at localhost:8765"
-run = "python -m http.server 8765 --bind 127.0.0.1"
+[tasks.test]
+description = "Build every project and run every model's check()"
+raw_args = true
+run = "uv run pytest -q"
 
 [tasks.watch]
-description = "Live-reloading browser viewer at localhost:32323"
+description = "Live-reloading browser viewer for one project at localhost:32323"
+raw_args = true
 run = "uv run python tools/watch.py"
+
+[tasks.render]
+description = "Render a project's exported STLs to PNGs (no GPU needed)"
+raw_args = true
+run = "uv run python tools/render.py"
+
+[tasks.new]
+description = "Scaffold a new project folder"
+raw_args = true
+run = "uv run python tools/new.py"
+
+[tasks.fmt]
+description = "Format and lint the workspace"
+run = ["uv run ruff format .", "uv run ruff check --fix ."]
 
 [tasks.repl]
 description = "IPython shell with build123d loaded"

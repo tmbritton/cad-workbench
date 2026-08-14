@@ -1,24 +1,29 @@
 #!/usr/bin/env python
-"""Render an STL to PNG, without a GPU.
+"""Render a project's exported STLs to PNG, without a GPU.
 
 Offscreen GL is unavailable inside the Flatpak sandboxes on this machine, so
 this does its own orthographic z-buffer rasterisation with numpy and writes the
 image with Pillow. Flat shading, one key light plus fill, backface culling.
 
-    mise run render                 # all views
-    uv run python tools/render.py --view iso --out /tmp/x.png
+    mise render dehydrator-riser                  # every model, every view
+    mise render dehydrator-riser collar           # one model
+    mise render dehydrator-riser collar -v iso    # one view
+
+Reads from exports/<project>/ and writes to exports/<project>/renders/, so it
+runs after `mise build`, not instead of it.
 """
 
 from __future__ import annotations
 
 import argparse
 import struct
+import sys
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
+from cadkit.export import EXPORTS, GREY, OFF, RED, ROOT
 
 # azimuth, elevation in degrees
 VIEWS = {
@@ -27,8 +32,7 @@ VIEWS = {
     "side": (90.0, 0.0),
     "top": (0.0, 89.9),
     "under": (32.0, -34.0),
-    # The coupon's corner sits at +X/+Y. The camera looks along +Y in the
-    # rotated frame, so its world azimuth is -90 - az; -135 puts it on the
+    # For a part cut down to one corner at +X/+Y: puts the camera on the
     # corner's outside rather than staring into the concave face.
     "corner": (225.0, 22.0),
     "corner-under": (215.0, -26.0),
@@ -134,28 +138,58 @@ def render(tris: np.ndarray, size: tuple[int, int], view: str) -> Image.Image:
     return Image.fromarray(frame.astype(np.uint8), "RGB")
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--stl", default=str(ROOT / "model" / "collar.stl"))
-    ap.add_argument("--view", default="all", choices=["all", *VIEWS])
-    ap.add_argument("--out", default=None)
-    ap.add_argument("--size", default="900x700")
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="\n".join(__doc__.splitlines()[2:]),
+    )
+    ap.add_argument("project", help="project folder name")
+    ap.add_argument("models", nargs="*", help="model names; omit to render all")
+    ap.add_argument("-v", "--view", default="all", choices=["all", *VIEWS])
+    ap.add_argument("--size", default="900x700", help="pixels, WxH (default 900x700)")
     args = ap.parse_args()
 
+    exported = EXPORTS / args.project
+    if not exported.is_dir():
+        print(
+            f"{RED}nothing exported for {args.project}{OFF}\n"
+            f"{GREY}run: mise build {args.project}{OFF}",
+            file=sys.stderr,
+        )
+        return 1
+
+    stls = sorted(exported.glob("*.stl"))
+    if args.models:
+        wanted = {m.removesuffix(".stl") for m in args.models}
+        stls = [p for p in stls if p.stem in wanted]
+        missing = wanted - {p.stem for p in stls}
+        if missing:
+            print(
+                f"{RED}not exported: {', '.join(sorted(missing))}{OFF}\n"
+                f"{GREY}run: mise build {args.project}{OFF}",
+                file=sys.stderr,
+            )
+            return 1
+    if not stls:
+        print(f"{RED}no STLs in {exported.relative_to(ROOT)}{OFF}", file=sys.stderr)
+        return 1
+
     w, h = (int(v) for v in args.size.lower().split("x"))
-    tris = load_stl(Path(args.stl))
-    print(f"{len(tris):,} triangles")
-
     views = list(VIEWS) if args.view == "all" else [args.view]
-    outdir = ROOT / "model" / "renders"
-    outdir.mkdir(exist_ok=True)
+    outdir = exported / "renders"
+    outdir.mkdir(parents=True, exist_ok=True)
 
-    for v in views:
-        img = render(tris, (w, h), v)
-        dest = Path(args.out) if args.out else outdir / f"collar-{v}.png"
-        img.save(dest)
-        print(f"  {v:<6} -> {dest}")
+    for stl in stls:
+        tris = load_stl(stl)
+        print(f"{stl.stem}  {GREY}{len(tris):,} triangles{OFF}")
+        for view in views:
+            dest = outdir / f"{stl.stem}-{view}.png"
+            render(tris, (w, h), view).save(dest)
+            print(f"  {view:<12} -> {dest.relative_to(ROOT)}")
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

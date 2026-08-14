@@ -1,6 +1,8 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 
 # Generated geometry and renders. Everything here is reproducible with
 # `mise build <project>`, and STL/STEP diffs are worthless in review.

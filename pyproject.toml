@@ -1,18 +1,49 @@
 [project]
-name = "dehydrator-riser"
+name = "cad-workbench"
 version = "0.1.0"
-description = "Filament-drying riser collar for a stackable food dehydrator"
+description = "build123d workspace for functional 3D-printed parts"
 requires-python = ">=3.12"
 dependencies = [
     "build123d>=0.11",
 ]
 
 [tool.uv]
-# Model scripts, not an installable library.
+# Model scripts and a small shared library, not an installable distribution.
+# cadkit is importable because .mise.toml puts the repo root on PYTHONPATH.
 package = false
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0",
+    "ruff>=0.16",
+    "trimesh>=5.0",
     "watchfiles>=1.2.0",
     "yacv-server>=0.11.3",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# So `pytest` works outside `mise test` too, where PYTHONPATH is not set.
+pythonpath = ["."]
+addopts = "--strict-markers"
+filterwarnings = [
+    # lib3mf, pulled in by build123d, emits one of these per ctypes struct it
+    # defines. Nothing here is actionable from this side.
+    "ignore:Due to '_pack_'.*:DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 90
+extend-exclude = ["exports"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# SIM300 treats a bare name as "the constant" next to an attribute chain, so it
+# rewrites `face.center().Z > tol` into `tol < face.center().Z` — a Yoda
+# condition, which is the thing the rule exists to prevent.
+ignore = ["SIM300"]
+
+[tool.ruff.lint.isort]
+# Project folders go on sys.path, so a model's siblings are top-level imports
+# that ruff cannot tell from third-party ones without being told.
+known-first-party = ["cadkit"]

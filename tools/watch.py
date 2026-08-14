@@ -1,35 +1,39 @@
 #!/usr/bin/env python
-"""Live-reloading viewer for the collar model.
+"""Live-reloading viewer for one model.
 
-Watches model/ and rebuilds on every save, pushing new geometry to a browser
-viewer at http://localhost:32323. Edit in Neovim, `:w`, watch the part change.
+Watches a project folder and rebuilds on every save, pushing new geometry to a
+browser viewer at http://localhost:32323. Edit in Neovim, `:w`, watch the part
+change.
 
-The model stays free of viewer imports — collar.py is a pure function from
-constants to geometry, and this script is the only thing that knows a viewer
-exists. That keeps `mise run build` headless and the model testable.
+    mise watch dehydrator-riser          # first model in the project
+    mise watch dehydrator-riser coupon   # a named one
 
-    mise run watch
+Models stay free of viewer imports — a model is a pure function from constants
+to geometry, and this script is the only thing that knows a viewer exists. That
+keeps `mise build` headless and the models testable.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 import socket
-import sys
 import traceback
 from pathlib import Path
 
+from cadkit.checks import bed_fit
+from cadkit.discover import find_project, is_model, load, model_files, project_path
+from cadkit.export import GREEN, GREY, OFF, RED, ROOT, YELLOW
+from cadkit.select import shape
+
 # yacv waits this long at *shutdown* for a browser to connect before giving up.
-# The default is 12s of hanging on Ctrl-C; we want to exit promptly.
+# The default is 12s of hanging on Ctrl-C; we want to exit promptly. Set here
+# rather than in main() because it must land before `import yacv_server`.
 os.environ.setdefault("YACV_GRACEFUL_SECS_CONNECT", "0.5")
 os.environ.setdefault("YACV_GRACEFUL_SECS_WORK", "0.5")
 
-ROOT = Path(__file__).resolve().parents[1]
-MODEL_DIR = ROOT / "model"
 HOST = os.getenv("YACV_HOST", "localhost")
 PORT = int(os.getenv("YACV_PORT", "32323"))
-
-GREY, GREEN, RED, OFF = "\033[90m", "\033[32m", "\033[31m", "\033[0m"
 
 
 def preflight() -> None:
@@ -51,8 +55,8 @@ def preflight() -> None:
             print(f"{GREY}another watcher is probably still running:{OFF}")
             print(f"  ss -ltnp | grep {PORT}")
             print(f"{GREY}or use a different port:{OFF}")
-            print(f"  YACV_PORT=32324 mise run watch")
-            raise SystemExit(1)
+            print("  YACV_PORT=32324 mise watch <project>")
+            raise SystemExit(1) from None
 
 
 def describe(part) -> str:
@@ -67,38 +71,77 @@ def describe(part) -> str:
     )
 
 
+def first_model(project: Path) -> str:
+    """The project's first model, for when the user names only a project."""
+    with project_path(project):
+        for path in model_files(project):
+            try:
+                if is_model(load(path.stem)):
+                    return path.stem
+            except Exception:
+                continue
+    raise SystemExit(f"{project.name} contains no model that defines build()")
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="\n".join(__doc__.splitlines()[2:]),
+    )
+    ap.add_argument("project", help="project folder name")
+    ap.add_argument("model", nargs="?", help="model name; default is the project's first")
+    args = ap.parse_args()
+
+    project = find_project(args.project)
+    name = (args.model or first_model(project)).removesuffix(".py")
+    if not (project / f"{name}.py").is_file():
+        raise SystemExit(f"no such model: {project.name}/{name}.py")
+
     preflight()
 
     # Imported only after preflight — see the note there.
-    import importlib
-
     from watchfiles import watch
     from yacv_server import clear, show
 
-    sys.path.insert(0, str(MODEL_DIR))
-    import collar
-
     def rebuild() -> None:
+        # Re-imported from scratch rather than reloaded: a model's siblings are
+        # ordinary modules too, and reloading only the one that changed would
+        # leave stale constants behind when a shared dimension moves.
         try:
-            importlib.reload(collar)
-            part = collar.build().part
+            with project_path(project):
+                module = load(name)
+                if not is_model(module):
+                    print(f"{RED}{name}.py defines no build(){OFF}")
+                    return
+                part = shape(module.build())
+                check = getattr(module, "check", None)
+                if check is not None:
+                    check(part)
+        except AssertionError as exc:
+            print(f"{RED}check failed{OFF} {exc}")
+            print(f"{GREY}viewer still showing the last good version{OFF}")
+            return
         except Exception:
             print(f"{RED}build failed{OFF}")
             traceback.print_exc()
             print(f"{GREY}viewer still showing the last good version{OFF}")
             return
-        clear()
-        show(part.wrapped, names=["collar"])
-        print(f"{GREEN}ok{OFF}  {describe(part)}")
 
-    print(f"{GREY}watching{OFF} {MODEL_DIR.relative_to(ROOT)}/")
+        clear()
+        show(part.wrapped, names=[name])
+        print(f"{GREEN}ok{OFF}  {describe(part)}")
+        ok, message = bed_fit(part)
+        if not ok:
+            print(f"{YELLOW}warn{OFF} {message}")
+
+    print(f"{GREY}watching{OFF} {project.relative_to(ROOT)}/  {GREY}showing{OFF} {name}")
     rebuild()
     print(f"{GREY}viewer  {OFF} http://{HOST}:{PORT}")
     print(f"{GREY}stop    {OFF} Ctrl-C\n")
 
     try:
-        for changes in watch(MODEL_DIR, watch_filter=lambda _c, p: p.endswith(".py")):
+        for changes in watch(project, watch_filter=lambda _c, p: p.endswith(".py")):
             names = sorted({Path(p).name for _, p in changes})
             print(f"{GREY}changed{OFF} {', '.join(names)}")
             rebuild()
