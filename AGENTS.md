@@ -12,8 +12,16 @@ projects/<name>/     one folder per part or family of parts
 cadkit/              shared helpers — selectors, checks, printer, materials
 tools/               build driver, viewer, renderer, scaffolder
 tests/               builds every model and runs its own checks
+inputs/              third-party geometry models build from; gitignored in full
 exports/             generated; gitignored in full
 ```
+
+`inputs/` holds geometry this repo did not make — another generator's output, a
+downloaded mesh, a scan. It is gitignored because it is not ours to carry and
+because binary blobs in history are permanent. A model that reads from it says
+so in its project README and raises `FileNotFoundError` naming the path when it
+is absent; the suite turns that into a skip rather than a failure, so a
+checkout without the geometry is quiet rather than permanently red.
 
 ## Commands
 

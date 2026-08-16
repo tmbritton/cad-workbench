@@ -7,3 +7,10 @@ __pycache__/
 # Generated geometry and renders. Everything here is reproducible with
 # `mise build <project>`, and STL/STEP diffs are worthless in review.
 exports/
+
+# Third-party geometry a model is built from -- other people's generator
+# output, downloaded meshes, scans. Not reproducible from this repo, but not
+# ours to carry either, and binary blobs in history are permanent. A project
+# that needs one says so in its README and fails with a readable error when it
+# is absent.
+inputs/

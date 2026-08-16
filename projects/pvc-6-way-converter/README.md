@@ -8,6 +8,21 @@ and `inputs/quarter-inch-6-way-half-inch-converter.stl` is that generator's
 output with the pipe sizes already checked against the real pipe with calipers.
 This project exists to repair one fault in it — see **The bug**, below.
 
+## What you need before it builds
+
+    inputs/quarter-inch-6-way-half-inch-converter.stl
+
+That file is **not in the repo** — `inputs/` is gitignored, because it is
+somebody else's generator output rather than ours to carry. `converter.py`
+reads it at build time and fails with a readable error naming the path if it
+is absent, so `mise build pvc-6-way-converter` and `mise test` cannot work on
+a checkout that does not have it. Regenerate it from the generator, or copy it
+in, before building.
+
+If it is ever regenerated, `check()` re-measures everything below rather than
+trusting it, so a source whose dimensions have moved fails loudly instead of
+exporting a part that no longer fits the pipe.
+
 ## Measurements
 
 All in millimetres, taken off the source mesh (`converter.py` asserts every one

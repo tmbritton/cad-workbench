@@ -6,6 +6,9 @@ a shared dimension, or to build123d itself gets checked against every part in
 the tree rather than the one that happened to be open.
 
 Each model is a separate test so a failure names the part.
+
+A model built from third-party geometry skips rather than fails when that
+geometry is absent — see the FileNotFoundError branch below.
 """
 
 from __future__ import annotations
@@ -34,13 +37,26 @@ def test_model(project_name: str, model_name: str) -> None:
         if not is_model(module):
             pytest.skip(f"{model_name}.py is a helper, not a model")
 
-        result = build_model(
-            project=project_name,
-            name=model_name,
-            build_fn=module.build,
-            check_fn=getattr(module, "check", None),
-            material=material_of(module),
-        )
+        try:
+            result = build_model(
+                project=project_name,
+                name=model_name,
+                build_fn=module.build,
+                check_fn=getattr(module, "check", None),
+                material=material_of(module),
+            )
+        except FileNotFoundError as missing:
+            # A model built on geometry this repo does not carry — another
+            # generator's output, a downloaded mesh, a scan — cannot run on a
+            # checkout without it, and `inputs/` is gitignored precisely
+            # because that geometry is not ours to commit. Nothing about this
+            # workspace has regressed, so it is not a failure; a suite that is
+            # permanently red is a suite nobody reads.
+            #
+            # The path goes in the skip message, because the failure this
+            # branch could otherwise hide is a model pointing at the wrong
+            # filename — which looks identical from here and is a real bug.
+            pytest.skip(f"needs geometry this checkout does not have: {missing}")
 
     # The mesh, not the solid. A valid B-rep can still tessellate into
     # something the slicer chokes on, and the STL is what actually gets sliced.
