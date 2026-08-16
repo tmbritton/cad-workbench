@@ -8,7 +8,7 @@ exports go to STEP and STL for slicing.
 mise run setup                  # install dependencies
 mise build                      # build every project into exports/
 mise build dehydrator-riser     # build one
-mise watch dehydrator-riser     # live viewer at localhost:32323
+mise dev dehydrator-riser       # live viewer at localhost:32323
 mise test                       # build everything and run every check
 mise test dehydrator-riser      # ...or just one project
 mise new spool-holder           # scaffold a new project

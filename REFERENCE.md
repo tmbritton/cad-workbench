@@ -27,7 +27,7 @@ traceable to something here or to a measurement, not to an agent's recollection.
 - [yacv — Yet Another CAD Viewer](https://github.com/Yeicor/yacv) (MIT, by
   Yeicor) — browser viewer for build123d geometry, no editor extension needed.
   Serves WebGL on `localhost:32323` and pushes updates over websocket. This is
-  what `mise watch` displays; `tools/watch.py` is a file-watching wrapper.
+  what `mise dev` displays; `tools/watch.py` is a file-watching wrapper.
   Two gotchas worth remembering: importing `yacv_server` **starts a server as a
   side effect**, so use the module-level `show`/`clear` rather than
   constructing a `YACV()`; and its graceful-shutdown timers apply at exit, not

@@ -5,8 +5,11 @@ Watches a project folder and rebuilds on every save, pushing new geometry to a
 browser viewer at http://localhost:32323. Edit in Neovim, `:w`, watch the part
 change.
 
-    mise watch dehydrator-riser          # first model in the project
-    mise watch dehydrator-riser coupon   # a named one
+    mise dev dehydrator-riser          # first model in the project
+    mise dev dehydrator-riser coupon   # a named one
+
+The task is `dev` rather than `watch` because mise has a built-in `watch` that
+would shadow it. The file keeps the name that says what it does.
 
 Models stay free of viewer imports — a model is a pure function from constants
 to geometry, and this script is the only thing that knows a viewer exists. That
@@ -55,7 +58,7 @@ def preflight() -> None:
             print(f"{GREY}another watcher is probably still running:{OFF}")
             print(f"  ss -ltnp | grep {PORT}")
             print(f"{GREY}or use a different port:{OFF}")
-            print("  YACV_PORT=32324 mise watch <project>")
+            print("  YACV_PORT=32324 mise dev <project>")
             raise SystemExit(1) from None
 
 

@@ -29,7 +29,10 @@ description = "Build a project's models and run their check() — omit the name 
 raw_args = true
 run = "uv run python tools/test.py"
 
-[tasks.watch]
+# Named `dev`, not `watch`: mise has a built-in `watch` (a watchexec wrapper)
+# and built-ins win, so `mise watch <project>` never reached this task — it
+# tried to run watchexec on a task named after the project and died there.
+[tasks.dev]
 description = "Live-reloading browser viewer for one project at localhost:32323"
 raw_args = true
 run = "uv run python tools/watch.py"
@@ -44,7 +47,11 @@ description = "Scaffold a new project folder"
 raw_args = true
 run = "uv run python tools/new.py"
 
-[tasks.fmt]
+# Named `format` for the same reason: `mise fmt` is the built-in that formats
+# mise.toml itself. That one is the nastier of the two — it shadowed this task
+# silently and exited 0, so the workspace looked formatted when ruff had not
+# run at all.
+[tasks.format]
 description = "Format and lint the workspace"
 run = ["uv run ruff format .", "uv run ruff check --fix ."]
 

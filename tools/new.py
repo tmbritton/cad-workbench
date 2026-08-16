@@ -183,7 +183,7 @@ def main() -> int:
     for path in written:
         print(f"{GREEN}new{OFF}  {path.relative_to(ROOT)}")
     print(f"{GREY}     mise build {project_name}{OFF}")
-    print(f"{GREY}     mise watch {project_name}{OFF}")
+    print(f"{GREY}     mise dev {project_name}{OFF}")
     return 0
 
 
