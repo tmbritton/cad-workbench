@@ -19,6 +19,7 @@ mise new spool-holder           # scaffold a new project
 | Project | What it is |
 |---|---|
 | [`dehydrator-riser`](projects/dehydrator-riser/) | a collar that raises a food dehydrator's lid clear of a filament spool, turning it into an overnight dryer. Printed and in use. |
+| [`pvc-6-way-converter`](projects/pvc-6-way-converter/) | a six-way PVC node, five sockets of one pipe size and one of the next. Not designed here: it repairs an external generator's output, which capped the large arm. Not yet printed. |
 
 Each project folder holds its own README with the measurements the models are
 built from, and the print settings that were validated on a test print.

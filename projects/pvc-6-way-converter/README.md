@@ -1,0 +1,60 @@
+# pvc-6-way-converter
+
+A six-way PVC node: five sockets of the smaller pipe and one of the larger, so
+a frame built in the small size can pick up a run of the large one.
+
+The part is not designed here. It comes out of an external OpenSCAD generator,
+and `inputs/quarter-inch-6-way-half-inch-converter.stl` is that generator's
+output with the pipe sizes already checked against the real pipe with calipers.
+This project exists to repair one fault in it — see **The bug**, below.
+
+## Measurements
+
+All in millimetres, taken off the source mesh (`converter.py` asserts every one
+of them, so they cannot quietly drift from the file):
+
+| | small arms (x5) | large arm (x1) |
+|---|---|---|
+| socket bore (ID) | 9.70 | 15.80 |
+| outside diameter (OD) | 13.70 | 19.80 |
+| wall | 2.00 | 2.00 |
+
+Overall 33.70 mm cube — every arm reaches 16.85 mm from the centre. The bores
+all open into a shared cavity in the middle, so the finished part is a through
+fitting in every direction, not six blind cups.
+
+The two walls being the same 2.00 mm is what makes the repair need no number of
+its own; see the note in `converter.py`.
+
+## The bug
+
+Five arms end in a ring. The large one ended in a solid disc: its bore stopped
+2.95 mm short of the mouth, so there was nothing for the large pipe to enter.
+The cavity behind it was the right diameter and the right depth — only the last
+2.95 mm of the drilling was missing — which is why this reads as a generator
+fault rather than a design decision.
+
+`converter.py` finds that disc by what it is (flat, square to an arm's axis,
+concentric with it, and set back from the mouth instead of on it), sweeps it
+out to the mouth, and subtracts the result. That continues the existing bore
+exactly: same diameter, same facets, and the wall left behind is the arm's own
+2.00 mm. Nothing else in the mesh is touched.
+
+`check()` then measures all six mouths and requires each to be a ring of 2.00
+mm wall — the assertion that would have caught this in the first place.
+
+## Print settings
+
+Not yet chosen, and deliberately not guessed: no material is declared in
+`converter.py`, so the build report has no mass column. Nothing here has been
+printed or test-fitted.
+
+Worth settling before it is:
+
+- **Material**, from where the frame lives and what load it takes.
+- **Orientation.** Six arms means five of them overhang whatever way it is laid
+  down. Printing it with one arm's axis vertical leaves four horizontal arms
+  whose upper bores are unsupported over a 15.80 mm span at the widest, which
+  is the constraint that will decide supports.
+- **Fit.** The socket bores come from the generator and were sized against the
+  pipe, but nothing here has confirmed the printed clearance.
