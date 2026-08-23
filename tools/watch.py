@@ -5,7 +5,7 @@ Watches a project folder and rebuilds on every save, pushing new geometry to a
 browser viewer at http://localhost:32323. Edit in Neovim, `:w`, watch the part
 change.
 
-    mise dev dehydrator-riser          # first model in the project
+    mise dev dehydrator-riser          # the project's default model
     mise dev dehydrator-riser coupon   # a named one
 
 The task is `dev` rather than `watch` because mise has a built-in `watch` that
@@ -74,16 +74,44 @@ def describe(part) -> str:
     )
 
 
-def first_model(project: Path) -> str:
-    """The project's first model, for when the user names only a project."""
+def default_model(project: Path) -> str:
+    """The model to show when the user names only a project.
+
+    A model claims it by setting `DEFAULT = True`. Worth doing wherever the
+    part someone actually wants to look at is not the one that happens to sort
+    first: ball-bearing's assembled turntable is `turntable_post.py`, six files
+    below `bearing.py`, and reaching for `mise dev ball-bearing` and getting a
+    plain 26 mm ring is a papercut every time you come back to the project.
+
+    Without the marker it is the first model alphabetically, which is the right
+    answer for a project with one.
+    """
+    claimed, fallback = [], None
     with project_path(project):
         for path in model_files(project):
             try:
-                if is_model(load(path.stem)):
-                    return path.stem
+                module = load(path.stem)
             except Exception:
+                # A model that will not import is the build driver's problem to
+                # report, not this function's; it just cannot be the default.
                 continue
-    raise SystemExit(f"{project.name} contains no model that defines build()")
+            if not is_model(module):
+                continue
+            if getattr(module, "DEFAULT", False):
+                claimed.append(path.stem)
+            if fallback is None:
+                fallback = path.stem
+
+    if len(claimed) > 1:
+        raise SystemExit(
+            f"{project.name}: {' and '.join(claimed)} both set DEFAULT = True; "
+            "one model may claim it, or none"
+        )
+    if claimed:
+        return claimed[0]
+    if fallback is None:
+        raise SystemExit(f"{project.name} contains no model that defines build()")
+    return fallback
 
 
 def main() -> None:
@@ -97,7 +125,7 @@ def main() -> None:
     args = ap.parse_args()
 
     project = find_project(args.project)
-    name = (args.model or first_model(project)).removesuffix(".py")
+    name = (args.model or default_model(project)).removesuffix(".py")
     if not (project / f"{name}.py").is_file():
         raise SystemExit(f"no such model: {project.name}/{name}.py")
 

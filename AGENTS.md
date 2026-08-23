@@ -57,6 +57,7 @@ importable by their siblings, never exported.
 
 ```python
 MATERIAL = ASA  # optional — enables the mass column
+DEFAULT = True  # optional — `mise dev <project>` shows this one
 
 
 def build() -> Part: ...  # required, no arguments
@@ -75,6 +76,12 @@ names** — underscores, not hyphens. The folder may be kebab-case.
 
 `build()` may take keyword arguments with defaults; the driver calls it with
 none. That is how variants work.
+
+`DEFAULT` affects only `mise dev` with no model named. Without it the viewer
+shows the first model alphabetically, which is right for a project with one
+part and wrong for a family — reaching for `mise dev ball-bearing` and getting
+the plainest of its seven bearings is a papercut every time. One model per
+project may claim it; two is an error naming both.
 
 ## How to work here
 
