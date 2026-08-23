@@ -19,7 +19,7 @@ mise new spool-holder           # scaffold a new project
 | Project | What it is |
 |---|---|
 | [`dehydrator-riser`](projects/dehydrator-riser/) | a collar that raises a food dehydrator's lid clear of a filament spool, turning it into an overnight dryer. Printed and in use. |
-| [`ball-bearing`](projects/ball-bearing/) | a parametric print-in-place bearing — 85 standard trade sizes, three rolling-element shapes, races and elements printed in one piece. Translated from an OpenSCAD generator, with its bugs listed and fixed. Not yet printed. |
+| [`ball-bearing`](projects/ball-bearing/) | a parametric print-in-place bearing generator — any size, 85 standard trade sizes, three rolling-element shapes, an optional turntable top plate and an optional ISO-threaded boss. Races and elements print in one piece. Translated from an OpenSCAD generator, with its bugs listed and fixed. Not yet printed. |
 | [`pvc-6-way-converter`](projects/pvc-6-way-converter/) | a six-way PVC node, five sockets of one pipe size and one of the next. Not designed here: it repairs an external generator's output, which capped the large arm. Not yet printed. |
 
 Each project folder holds its own README with the measurements the models are

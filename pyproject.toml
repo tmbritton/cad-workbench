@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "build123d workspace for functional 3D-printed parts"
 requires-python = ">=3.12"
 dependencies = [
+    "bd-warehouse>=0.3.0",
     "build123d>=0.11",
 ]
 

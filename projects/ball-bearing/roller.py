@@ -1,31 +1,25 @@
-"""Parametric bearing, 6000, cylindrical rollers.
+"""6000 in rollers — 10 x 26 x 8 mm, 10 elements.
 
-Same generator as bearing.py at a different element setting — a variant is a
-model here, not a flag, so the file is the name and the STL cannot be produced
-under an ambiguous one.
+A roller is a cylinder standing on the plate, chamfered back at both ends to a
+narrower stub that carries on to the bearing's faces. The chamfer is the
+shoulder the raceway grips; the stub means the race never has to bridge over
+the roller. Line contact where a ball is point contact: more load, less spin.
 
-A roller has more contact area than a ball and no overhang worth the name: it
-is a cylinder standing on the plate, chamfered back at both ends to a narrower
-stub that carries on to the bearing's faces. The chamfer is the shoulder the
-raceway grips, and it is at 45 degrees so the race's matching roof prints
-without support. Nothing needs a breakaway skirt.
+Every number is in parameters.py — this file is the contract and nothing else.
 
-The cost is stiction — a cylinder is a line contact where a ball is a point —
-so this one turns less freely than either of the others, and is the right
-choice when the load matters more than the spin.
-
+    mise dev   ball-bearing roller
     mise build ball-bearing roller
 """
 
 from __future__ import annotations
 
-import bearing
-from bearing import MATERIAL, Bearing, check_bearing, solid
+import _bearing
+from _bearing import check_bearing, solid
 from build123d import Part
+from parameters import MATERIAL
+from parameters import ROLLER as SPEC
 
-__all__ = ["MATERIAL"]  # re-exported so the driver reports mass
-
-SPEC = Bearing.of("6000", element="roller")
+__all__ = ["MATERIAL"]  # re-exported so the build driver reports mass
 
 
 def build() -> Part:
@@ -38,9 +32,9 @@ def check(part) -> None:
     # The stub has to reach both faces, or the race has to bridge over the
     # roller in mid-air. Measured on a roller rather than assumed from the
     # profile, because the boolean that cuts the raceway could have taken it.
-    _, _, rollers = bearing._bodies(part, SPEC)
+    _, _, rollers = _bearing._bodies(part, SPEC)
     height = rollers[0].bounding_box().size.Z
-    assert abs(height - SPEC.width) < bearing.TOL, (
+    assert abs(height - SPEC.width) < _bearing.TOL, (
         f"roller stands {height:.3f} mm in an {SPEC.width:.3f} mm bearing — its "
         "ends do not reach the faces, so the race must bridge over it"
     )
