@@ -1,4 +1,4 @@
-"""Everything at once — a 90 mm turntable top on an M12 stud.
+"""Everything at once — a 100 mm turntable top on an M12 stud.
 
 The part to preview if you want to see how the pieces sit together: a disc on
 the outer race, a threaded stud on the inner race, and the bearing between

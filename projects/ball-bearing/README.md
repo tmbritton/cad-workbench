@@ -149,7 +149,7 @@ no axial capture, and the bearing is a rattle.
 
 | Model | Bearing | Elements | What it is for |
 |---|---|---|---|
-| **`turntable_post.py`** | 6 x 44 x 10 | dumbbell | **everything at once** — 90 mm top plate *and* an M12 stud |
+| **`turntable_post.py`** | 6 x 44 x 10 | dumbbell | **everything at once** — 100 mm top plate *and* an M12 stud |
 | `bearing.py` | 6000 | dumbbell | the plain one to print — no overhang anywhere, no supports |
 | `roller.py` | 6000 | roller | line contact instead of point — more load, less spin |
 | `flanged.py` | F6000ZZ | ball | flange path and breakaway skirts |

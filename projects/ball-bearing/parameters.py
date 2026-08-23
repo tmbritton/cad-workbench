@@ -198,7 +198,7 @@ THREADED_STUD = Bearing(
 
 
 # ============================================================================
-# turntable_post.py — everything at once: a 90 mm top on an M12 stud
+# turntable_post.py — everything at once: a 100 mm top on an M12 stud
 # ============================================================================
 # The whole assembly in one part, and the one to preview if you want to see how
 # the pieces sit together. A disc on the outer race, a threaded stud on the
@@ -208,12 +208,16 @@ THREADED_STUD = Bearing(
 # stays put, and the 90 mm top turns on it.
 #
 # The proportions are set rather than left to the generator, and they are what
-# makes both features fit at once. The bearing has to be big enough across for
-# a 90 mm plate to have something to hold on to, and its inner race has to be
-# fat enough to carry an M12 — but the elements still have to fit in a 10 mm
-# width. 6 mm races with 8 mm dumbbells is what threads that needle; the
-# generator's own thirds would give 6.3 mm races and 9.5 mm elements, and the
-# raceway would leave too little of the inner race to put a stud on.
+# makes both features fit at once. The inner race has to be fat enough to carry
+# an M12, but the elements still have to fit in a 10 mm width. 6 mm races with
+# 8 mm dumbbells is what threads that needle; the generator's own thirds would
+# give 6.3 mm races and 9.5 mm elements, and the raceway would leave too little
+# of the inner race to put a stud on.
+#
+# The plate overhangs the bearing by 28 mm, which is a lot of cantilever on a
+# 4 mm disc. It prints flat and it is stiff enough to hold a light top, but if
+# it needs to carry weight the bearing wants to grow under it — see the README
+# on how the radial gap constrains that.
 
 TURNTABLE_POST = Bearing(
     bore=6,  # a through hole down the middle of the stud
@@ -223,7 +227,7 @@ TURNTABLE_POST = Bearing(
     race_t=6,  # fat races: the inner one has to carry the M12
     element_d=8,  # what is left of the 19 mm gap once the races have theirs
     plate=Plate(
-        diameter=90,  # the top
+        diameter=100,  # the top — the whole part, across
         thickness=4,
         holes=6,
         hole_d=4.5,
