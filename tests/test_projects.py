@@ -60,7 +60,12 @@ def test_model(project_name: str, model_name: str) -> None:
 
     # The mesh, not the solid. A valid B-rep can still tessellate into
     # something the slicer chokes on, and the STL is what actually gets sliced.
-    watertight(result.stl, volume_mm3=result.volume)
+    #
+    # The expected body count comes from the solid rather than being fixed at
+    # one, so a print-in-place assembly is held to the same standard as a
+    # single part: the tessellation must not have split a body or welded two
+    # together. A model that must be one lump says so in its own check().
+    watertight(result.stl, volume_mm3=result.volume, bodies=result.solids)
 
 
 def test_workspace_has_projects() -> None:

@@ -80,7 +80,10 @@ def bed_fit(obj, margin: float = 0.0) -> tuple[bool, str]:
 
 
 def watertight(
-    stl_path: str | Path, volume_mm3: float | None = None, tol: float = 0.005
+    stl_path: str | Path,
+    volume_mm3: float | None = None,
+    tol: float = 0.005,
+    bodies: int = 1,
 ) -> None:
     """The exported mesh must be printable, not merely well-formed.
 
@@ -93,18 +96,35 @@ def watertight(
     case: a mesh that is watertight and manifold but encloses a different
     amount of space than the model does, which means the tessellation dropped
     or duplicated a face.
+
+    `bodies` is how many separate lumps the mesh should contain. One is the
+    right default for a part, but a print-in-place assembly is several on
+    purpose — a bearing prints as two races and a ring of rolling elements that
+    never touch. Pass the solid's own count and the check becomes what it was
+    always trying to be: the tessellation neither split a body nor welded two
+    together. `single_solid` is still where a part says it must be one lump.
     """
     import trimesh  # imported lazily; only needed when this check is used
 
     mesh = trimesh.load_mesh(str(stl_path))
+
+    # OCCT closes a surface of revolution at its poles with two zero-area
+    # triangles — every sphere, cone or dome has them. They enclose nothing and
+    # cannot seal a hole, but they read as unpaired edges, so without this a
+    # ball bearing looks like a mesh full of holes and a real defect would be
+    # lost in the noise. Dropped here rather than tolerated below, so
+    # everything after this line is still judged strictly.
+    mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
+    mesh.merge_vertices()
 
     problems = []
     if not mesh.is_watertight:
         problems.append("not watertight (has holes or unpaired edges)")
     if not mesh.is_winding_consistent:
         problems.append("inconsistent winding (some normals are inverted)")
-    if mesh.body_count != 1:
-        problems.append(f"{mesh.body_count} disconnected bodies, expected 1")
+    if mesh.body_count != bodies:
+        problems.append(f"{mesh.body_count} disconnected bodies, expected {bodies}")
 
     if volume_mm3 is not None and mesh.is_watertight:
         drift = abs(mesh.volume - volume_mm3) / volume_mm3
