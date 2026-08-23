@@ -101,6 +101,12 @@ Things worth a source that does not yet have one:
   what the two-gate strategy does anyway.
 - **Printer-specific dimensional accuracy uncalibrated.** Every tolerance above
   is a generic starting point until measured against a printed part.
+- **No print-in-place clearance figure.** The table above gives ~0.5 mm for
+  clearance around internal components, which is an assembly figure — parts
+  that go together after printing. A gap that is *printed* as a gap is a
+  different question, and `projects/ball-bearing` currently answers it with
+  0.15 mm and a 0.10 mm floor, both reasoned from line width rather than
+  sourced. A test print of the bearing would settle it.
 - **Measurement technique.** Getting reliable dimensions off an existing object
   — datum choice, where to take a radius — is its own skill and has no source
   here yet.
