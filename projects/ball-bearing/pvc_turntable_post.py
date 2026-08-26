@@ -11,6 +11,15 @@ base and stays put, and the 254 mm top turns on it.
 The stud is a straight thread standing in for 1" NPT, not the true 1:16 taper
 — `_pipe.py` has the full reasoning for why, and what that trades away.
 
+ASA rather than parameters.py's project-wide PETG — this is the model most
+likely to sit outdoors, and ASA's rubber phase does not degrade in sunlight
+the way ABS's does. The tradeoff: ASA warps more than PETG (this project
+ranks it 0.9 to PETG's 0.3 — see `cadkit.materials`), and the bearing's
+0.15 mm raceway clearance has only been proven in PETG. `mise check` scores
+the warp risk on the 254 mm plate against whichever material is set here, so
+switching it back is one line if a print says the clearance needs opening up
+to survive the shrinkage.
+
 Every number is in parameters.py — this file is the contract and nothing else.
 
     mise dev   ball-bearing pvc_turntable_post
@@ -22,10 +31,11 @@ from __future__ import annotations
 import _bearing
 from _bearing import check_bearing, solid
 from build123d import Part
-from parameters import MATERIAL
 from parameters import PVC_TURNTABLE_POST as SPEC
 
-__all__ = ["MATERIAL"]  # re-exported so the build driver reports mass
+from cadkit.materials import ASA
+
+MATERIAL = ASA
 
 
 def build() -> Part:
