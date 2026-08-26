@@ -17,6 +17,7 @@ import sys
 import traceback
 from pathlib import Path
 
+from cadkit import dfm
 from cadkit.discover import is_model, load, model_files, project_path, projects
 from cadkit.export import (
     EXPORTS,
@@ -32,7 +33,9 @@ from cadkit.export import (
 )
 
 
-def build_project(project: Path, only: list[str], write: bool) -> tuple[int, int]:
+def build_project(
+    project: Path, only: list[str], write: bool, rules=None
+) -> tuple[int, int]:
     """Build the requested models in one project. Returns (built, failed)."""
     candidates = model_files(project)
     if only:
@@ -80,6 +83,8 @@ def build_project(project: Path, only: list[str], write: bool) -> tuple[int, int
                         check_fn=getattr(module, "check", None),
                         material=material_of(module),
                         write=write,
+                        rules=rules,
+                        allow=getattr(module, "ALLOW", None),
                     )
                 )
             except AssertionError as exc:
@@ -94,6 +99,11 @@ def build_project(project: Path, only: list[str], write: bool) -> tuple[int, int
         print(f"  {GREEN}ok{OFF}   {result.line(width)}")
         for warning in result.warnings:
             print(f"  {YELLOW}warn{OFF} {result.name}: {warning}")
+        for finding in result.findings:
+            colour = RED if finding.severity == "fail" else YELLOW
+            if finding.severity == "allowed":
+                colour = GREY
+            print(f"  {colour}{finding.severity:<4}{OFF} {result.name}: {finding.line()}")
     for failure in failures:
         name, _, detail = failure.partition(": ")
         print(f"  {RED}FAIL{OFF} {name:<{width}}  {detail}")
@@ -119,6 +129,12 @@ def main() -> int:
     ap.add_argument(
         "-n", "--dry-run", action="store_true", help="build and check, but write nothing"
     )
+    ap.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help="also run the design-for-FDM rules, as `mise check` does",
+    )
     args = ap.parse_args()
 
     available = projects()
@@ -138,7 +154,12 @@ def main() -> int:
 
     built = failed = 0
     for project in chosen:
-        b, f = build_project(project, args.models, write=not args.dry_run)
+        b, f = build_project(
+            project,
+            args.models,
+            write=not args.dry_run,
+            rules=dfm.RULES if args.check else None,
+        )
         built += b
         failed += f
 

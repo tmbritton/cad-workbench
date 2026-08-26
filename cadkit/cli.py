@@ -15,6 +15,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from cadkit import dfm
 from cadkit.export import (
     GREEN,
     GREY,
@@ -45,6 +46,12 @@ def cli(build_fn, check_fn=None, argv: list[str] | None = None) -> int:
         action="store_true",
         help="build and check, but write nothing",
     )
+    ap.add_argument(
+        "-c",
+        "--check",
+        action="store_true",
+        help="also run the design-for-FDM rules, as `mise check` does",
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -55,6 +62,8 @@ def cli(build_fn, check_fn=None, argv: list[str] | None = None) -> int:
             check_fn=check_fn,
             material=material_of(main),
             write=not args.dry_run,
+            rules=dfm.RULES if args.check else None,
+            allow=getattr(main, "ALLOW", None),
         )
     except AssertionError as exc:
         print(f"{RED}FAIL{OFF} {path.stem}: {exc}", file=sys.stderr)
@@ -63,6 +72,9 @@ def cli(build_fn, check_fn=None, argv: list[str] | None = None) -> int:
     print(f"{GREEN}ok{OFF}   {result.line()}")
     for warning in result.warnings:
         print(f"{YELLOW}warn{OFF} {warning}")
+    for finding in result.findings:
+        colour = {"fail": RED, "warn": YELLOW}.get(finding.severity, GREY)
+        print(f"{colour}{finding.severity:<4}{OFF} {finding.line()}")
     if not args.dry_run:
         rel = result.stl.parent.relative_to(ROOT)
         print(f"{GREY}     -> {rel}/{result.name}.{{stl,step}}{OFF}")

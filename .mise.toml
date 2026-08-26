@@ -29,6 +29,26 @@ description = "Build a project's models and run their check() — omit the name 
 raw_args = true
 run = "uv run python tools/test.py"
 
+[tasks.slice]
+description = "Real print time and filament weight from the slicer; --3mf to export"
+raw_args = true
+run = "uv run python tools/slice.py"
+
+[tasks.card]
+description = "Regenerate the as-built block in each project README"
+raw_args = true
+run = "uv run python tools/card.py"
+
+[tasks.inspect]
+description = "What a built part is made of: faces, edges, plate contact, drift"
+raw_args = true
+run = "uv run python tools/probe.py"
+
+[tasks.check]
+description = "Check a project's models against the design-for-FDM rules"
+raw_args = true
+run = "uv run python tools/check.py"
+
 # Named `dev`, not `watch`: mise has a built-in `watch` (a watchexec wrapper)
 # and built-ins win, so `mise watch <project>` never reached this task — it
 # tried to run watchexec on a task named after the project and died there.

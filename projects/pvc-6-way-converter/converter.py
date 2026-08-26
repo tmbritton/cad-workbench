@@ -34,6 +34,13 @@ SOURCE = (
     / "quarter-inch-6-way-half-inch-converter.stl"
 )
 
+# The geometry this part is a repair of, so `mise inspect` can measure how far
+# the repair moved anything it was not supposed to. The two directions read
+# differently and both matter: material we added where the original had none is
+# the drilling, and material the original had that we did not reproduce should
+# be the cap and nothing else.
+TARGET = SOURCE
+
 # ---- measured (off the source mesh, mm) -----------------------------------
 # The five good arms, and the large one. Both wall figures are the same 2.0,
 # which is what makes the repair below need no dimension of its own.

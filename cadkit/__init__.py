@@ -8,15 +8,24 @@ came from.
 
 from cadkit.checks import bed_fit, fits_bed, single_solid, watertight
 from cadkit.cli import cli
+from cadkit.compare import compare
+from cadkit.dfm import inspect_part
+from cadkit.measure import measured
+from cadkit.polish import bed_chamfer, polish
 from cadkit.select import cavity_ceiling, faces_by_z, horizontal_face_at, shape
 
 __all__ = [
+    "bed_chamfer",
     "bed_fit",
     "cavity_ceiling",
     "cli",
+    "compare",
     "faces_by_z",
     "fits_bed",
     "horizontal_face_at",
+    "inspect_part",
+    "measured",
+    "polish",
     "shape",
     "single_solid",
     "watertight",

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import pytest
 
+from cadkit import dfm
 from cadkit.checks import watertight
 from cadkit.discover import is_model, load, model_files, project_path, projects
 from cadkit.export import build_model, material_of
@@ -44,6 +45,8 @@ def test_model(project_name: str, model_name: str) -> None:
                 build_fn=module.build,
                 check_fn=getattr(module, "check", None),
                 material=material_of(module),
+                rules=dfm.RULES,
+                allow=getattr(module, "ALLOW", None),
             )
         except FileNotFoundError as missing:
             # A model built on geometry this repo does not carry — another
@@ -66,6 +69,18 @@ def test_model(project_name: str, model_name: str) -> None:
     # single part: the tessellation must not have split a body or welded two
     # together. A model that must be one lump says so in its own check().
     watertight(result.stl, volume_mm3=result.volume, bodies=result.solids)
+
+    # And the printability rules. Only the ones the rules call fatal, and only
+    # the ones the model has not declared an exception to: a warning is a
+    # judgement call and belongs in `mise check`, where a person reads it. What
+    # fails here is geometry that cannot come off the plate at all — a surface
+    # starting in mid-air, a wall thinner than the nozzle can lay down.
+    #
+    # A model overrules any of it in its own file, with a reason:
+    #
+    #     ALLOW = {"overhang": "the seat ring, printed on support; 13 Aug"}
+    fatal = [f.line() for f in result.findings if f.severity == "fail"]
+    assert not fatal, "\n".join(fatal)
 
 
 def test_workspace_has_projects() -> None:

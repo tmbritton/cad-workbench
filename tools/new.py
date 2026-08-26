@@ -60,7 +60,9 @@ def check(part) -> None:
     """What must be true, or this should not reach the plate.
 
     Assert the dimensions that mate, not the ones that are merely convenient —
-    a check that restates the code catches nothing.
+    a check that restates the code catches nothing. This says the part is what
+    it claims to be; `mise check` asks the other question, which is whether it
+    can be printed.
     """
     single_solid(part)
     fits_bed(part)
@@ -112,6 +114,12 @@ waiting to happen.
 
 Filament, orientation, supports, brim — and which of these were *validated* on a
 test print rather than assumed.
+
+## Printability
+
+What `mise check` says, and what was decided about it. Anything the model
+overrules with an `ALLOW` entry belongs here too, with the print that settled
+it — the dict holds one line, and this is where the rest of the reasoning goes.
 
 ## Open questions
 

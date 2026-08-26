@@ -24,9 +24,10 @@ import socket
 import traceback
 from pathlib import Path
 
+from cadkit import dfm
 from cadkit.checks import bed_fit
 from cadkit.discover import find_project, is_model, load, model_files, project_path
-from cadkit.export import GREEN, GREY, OFF, RED, ROOT, YELLOW
+from cadkit.export import GREEN, GREY, OFF, RED, ROOT, YELLOW, material_of
 from cadkit.select import shape
 
 # yacv waits this long at *shutdown* for a browser to connect before giving up.
@@ -62,15 +63,29 @@ def preflight() -> None:
             raise SystemExit(1) from None
 
 
-def describe(part) -> str:
-    """The facts worth checking on every rebuild."""
+def describe(part, was: int | None = None) -> str:
+    """The facts worth checking on every rebuild.
+
+    The body count is reported, not judged. How many lumps a part should be is
+    the model's own business and it says so in `check()` — `single_solid` where
+    it must be one, and nothing where it must not: a print-in-place bearing is
+    two races and a ring of elements on purpose, and that is the same argument
+    `watertight(bodies=...)` settled.
+
+    What the viewer *can* see that a single build cannot is the count changing
+    between two rebuilds. That is worth saying, because it usually means a
+    feature just came adrift from the rest of the part while you were editing —
+    and on a part that is legitimately many-bodied it is the only sign.
+    """
     size = part.bounding_box().size
     solids = len(part.solids())
-    warn = "" if solids == 1 else f"  {RED}<- expected 1{OFF}"
+    moved = ""
+    if was is not None and was != solids:
+        moved = f"  {YELLOW}<- was {was}{OFF}"
     return (
-        f"{solids} solid  "
+        f"{solids} solid{'' if solids == 1 else 's'}  "
         f"{size.X:.1f} x {size.Y:.1f} x {size.Z:.1f} mm  "
-        f"{part.volume / 1000:,.1f} cm3{warn}"
+        f"{part.volume / 1000:,.1f} cm3{moved}"
     )
 
 
@@ -135,6 +150,10 @@ def main() -> None:
     from watchfiles import watch
     from yacv_server import clear, show
 
+    # Body count from the last good rebuild, so `describe` can say when it
+    # moves. A list rather than a name, because `rebuild` closes over it.
+    previous: list[int | None] = [None]
+
     def rebuild() -> None:
         # Re-imported from scratch rather than reloaded: a model's siblings are
         # ordinary modules too, and reloading only the one that changed would
@@ -149,6 +168,10 @@ def main() -> None:
                 check = getattr(module, "check", None)
                 if check is not None:
                     check(part)
+                # Read inside the with-block: `project_path` takes the
+                # project's modules back off sys.modules on the way out.
+                material = material_of(module)
+                allow = getattr(module, "ALLOW", None)
         except AssertionError as exc:
             print(f"{RED}check failed{OFF} {exc}")
             print(f"{GREY}viewer still showing the last good version{OFF}")
@@ -161,10 +184,29 @@ def main() -> None:
 
         clear()
         show(part.wrapped, names=[name])
-        print(f"{GREEN}ok{OFF}  {describe(part)}")
+        print(f"{GREEN}ok{OFF}  {describe(part, previous[0])}")
+        previous[0] = len(part.solids())
         ok, message = bed_fit(part)
         if not ok:
             print(f"{YELLOW}warn{OFF} {message}")
+
+        # Only the rules that need no ray casting. The rest are worth a second
+        # each and this runs on every keystroke that reaches a save; `mise
+        # check` is where the full set lives.
+        #
+        # Wrapped because a malformed ALLOW raises, and losing the watcher over
+        # a typo in an advisory check would be a poor trade — the geometry is
+        # already on screen by this point.
+        try:
+            report = dfm.inspect_part(
+                part, material=material, allow=allow, rules=dfm.CHEAP
+            )
+        except (TypeError, ValueError) as exc:
+            print(f"{YELLOW}warn{OFF} ALLOW: {exc}")
+            return
+        for finding in report.findings:
+            colour = {"fail": RED, "warn": YELLOW}.get(finding.severity, GREY)
+            print(f"{colour}{finding.severity:<4}{OFF} {finding.line()}")
 
     print(f"{GREY}watching{OFF} {project.relative_to(ROOT)}/  {GREY}showing{OFF} {name}")
     rebuild()

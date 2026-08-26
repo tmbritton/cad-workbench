@@ -30,6 +30,19 @@ from cadkit.materials import ASA
 
 MATERIAL = ASA
 
+# Both validated on the ring test, 13 Aug 2026, and written down here so
+# `mise slice` costs the print that will actually happen rather than an
+# idealised one. The seat ring at z = SOCKET_D hangs inward over the socket
+# cavity and does not bridge; the brim is for 89.8 mm of height standing on
+# 17.5 cm2 of bed contact. Both are argued in full in README.md.
+SUPPORT = True
+BRIM = 5.0
+
+# The seat ring is the overhang the rules find, and support is the answer that
+# was chosen for it rather than a redesign — so the finding is not news, and
+# leaving it shouting drowns out the next one. README.md carries the argument.
+ALLOW = {"overhang": "the seat ring, printed on support; ring test, 13 Aug 2026"}
+
 # The male section only ever engages SOCKET_D. Above that it is plain wall, and
 # plain wall is exactly what this test is not about.
 MALE_KEEP = collar.SOCKET_D

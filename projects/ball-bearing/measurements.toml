@@ -1,0 +1,25 @@
+# Dimensions whose provenance is the interesting part. Everything else in this
+# project lives in parameters.py next to the comment that explains it — see
+# cadkit/measure.py for when a number belongs here instead.
+#
+# These three are the ones REFERENCE.md's "Gaps" names: reasoned from line
+# width rather than sourced, and never tested on a print. They are marked
+# provisional so `mise check` keeps saying so until one is.
+
+[clearance]
+value = 0.15
+unit = "mm"
+how = "reasoned from a 0.42 mm line width; no printed bearing has tested it"
+provisional = true
+
+[clearance_floor]
+value = 0.10
+unit = "mm"
+how = "the point below which a 0.4 mm nozzle cannot be relied on to leave a gap open; reasoned, not measured"
+provisional = true
+
+[spacing]
+value = 0.05
+unit = "mm"
+how = "fraction of one element, chosen so the elements do not bind as the races flex; not measured"
+provisional = true

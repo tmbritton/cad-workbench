@@ -38,6 +38,7 @@ class Result:
     step: Path
     material: Material | None = None
     warnings: list[str] = field(default_factory=list)
+    findings: list = field(default_factory=list)  # cadkit.dfm.Finding
 
     @property
     def solids(self) -> int:
@@ -69,6 +70,8 @@ def build_model(
     check_fn=None,
     material: Material | None = None,
     write: bool = True,
+    rules=None,
+    allow=None,
 ) -> Result:
     """Build, check, then export. In that order, deliberately.
 
@@ -76,6 +79,13 @@ def build_model(
     the previous export in place rather than replacing it with geometry that is
     wrong in a way nobody noticed. A stale STL announces itself when the print
     does not match; a fresh wrong one does not.
+
+    `rules` names the `cadkit.dfm` rules to run afterwards, and defaults to
+    none: the wall-thickness and overhang rules cast rays, which costs about as
+    long again as building the part, and the rebuild loop is not the place to
+    spend it. `mise check` runs the lot; `mise build --check` does too, on
+    request. Findings never stop the export — a part that will print badly is
+    still a part you may want to look at in the slicer.
     """
     part = shape(build_fn())
 
@@ -95,6 +105,13 @@ def build_model(
     ok, message = bed_fit(part)
     if not ok:
         result.warnings.append(message)
+
+    if rules:
+        from cadkit.dfm import inspect_part
+
+        result.findings = inspect_part(
+            part, material=material, allow=allow, rules=rules
+        ).findings
 
     if write:
         out.mkdir(parents=True, exist_ok=True)

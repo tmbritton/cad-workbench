@@ -104,19 +104,11 @@ def watertight(
     always trying to be: the tessellation neither split a body nor welded two
     together. `single_solid` is still where a part says it must be one lump.
     """
-    import trimesh  # imported lazily; only needed when this check is used
+    from cadkit.mesh import from_stl
 
-    mesh = trimesh.load_mesh(str(stl_path))
-
-    # OCCT closes a surface of revolution at its poles with two zero-area
-    # triangles — every sphere, cone or dome has them. They enclose nothing and
-    # cannot seal a hole, but they read as unpaired edges, so without this a
-    # ball bearing looks like a mesh full of holes and a real defect would be
-    # lost in the noise. Dropped here rather than tolerated below, so
-    # everything after this line is still judged strictly.
-    mesh.update_faces(mesh.nondegenerate_faces())
-    mesh.remove_unreferenced_vertices()
-    mesh.merge_vertices()
+    # from_stl drops OCCT's zero-area pole triangles before anything is judged;
+    # see cadkit/mesh.py for why they would otherwise read as holes.
+    mesh = from_stl(stl_path)
 
     problems = []
     if not mesh.is_watertight:
