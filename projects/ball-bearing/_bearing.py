@@ -84,6 +84,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+import _pipe
 import _sizes
 import _threads
 from build123d import (
@@ -105,6 +106,7 @@ from build123d import (
 )
 
 from cadkit import fits_bed
+from cadkit.measure import measured
 from cadkit.printer import LINE_W, MIN_WALL, NOZZLE_D
 
 # ---- decided ---------------------------------------------------------------
@@ -140,8 +142,9 @@ DEFAULT_CHAMFER = 0.6
 # are nearer to each other than the machine's own positioning error, and
 # whether the bearing turns is decided by the print rather than by the model.
 # A decision rather than a law, and the conservative end of it — lower it if a
-# test print says the machine can hold a finer gap open.
-MIN_CLEARANCE = 0.10
+# test print says the machine can hold a finer gap open. Which is why it lives
+# in measurements.toml marked provisional, with the two gaps it governs.
+MIN_CLEARANCE = measured("clearance_floor")
 
 # Tolerance for measuring the built part back. Loose next to OCCT's own
 # precision, tight next to anything a 0.4 mm nozzle can express.
@@ -184,10 +187,13 @@ class Boss:
     it is a flange hanging down from the inner ring, which is what it is for:
     the outer race and its plate turn, this stays put.
 
-    `thread` is an ISO 261 designation — "M12", or "M12x1.5" for a fine pitch.
+    `thread` is an ISO 261 designation — "M12", or "M12x1.5" for a fine pitch —
+    or an NPT pipe size — "1 NPT" or "3/4 NPT" — for a stud that threads into a
+    piece of threaded PVC; see `_pipe.py` for what that stands in for and why.
     `external` puts the thread on the outside, making a stud that screws into
     something; otherwise the bore is tapped and a bolt screws up into it. The
-    form comes from `bd_warehouse`, drawn to ISO 68-1.
+    form comes from `bd_warehouse`, drawn to ISO 68-1 (NPT threads too — cut
+    straight, not to the true 1:16 taper; `_pipe.py` explains why).
     """
 
     length: float
@@ -408,10 +414,21 @@ class Bearing:
         return 2 * at_face
 
     @property
-    def boss_thread(self) -> _threads.Thread | None:
-        """The boss's thread, resolved against ISO 261, or None for a plain one."""
+    def boss_thread(self) -> _threads.Thread | _pipe.Pipe | None:
+        """The boss's thread, or None for a plain one.
+
+        Two families, told apart by shape: `"1 NPT"` goes to `_pipe.py`
+        (checked first, since an NPT-shaped designation for an unlisted size
+        should fail with *that* module's message, not `_threads.py`'s
+        "not a metric thread" one), everything else to `_threads.py` against
+        ISO 261. Both return an object with the same four attributes
+        (`name`, `pitch`, `major_d`, `minor_d`) — nothing below this property
+        cares which module built it.
+        """
         if self.boss is None or self.boss.thread is None:
             return None
+        if _pipe.is_pipe(self.boss.thread):
+            return _pipe.parse(self.boss.thread)
         return _threads.parse(self.boss.thread)
 
     @property

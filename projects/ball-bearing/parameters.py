@@ -28,6 +28,7 @@ from __future__ import annotations
 from _bearing import Bearing, Boss, Plate
 
 from cadkit.materials import PETG
+from cadkit.measure import measured
 
 # ============================================================================
 # Shared — these apply to every part below
@@ -39,12 +40,19 @@ MATERIAL = PETG
 
 # The gap on every face of every rolling element. The number to change first if
 # a printed bearing comes out fused solid (raise it) or rattly (lower it).
-# Under 0.10 is refused: a 0.4 mm nozzle cannot be relied on to leave it open.
-CLEARANCE = 0.15
+# Under the floor is refused: a 0.4 mm nozzle cannot be relied on to leave a
+# smaller gap open.
+#
+# This and SPACING live in measurements.toml rather than here, alone among the
+# numbers in this file, because they are among the ones REFERENCE.md admits
+# were reasoned rather than sourced — the floor they are held to is there
+# too, next to _bearing.MIN_CLEARANCE. The file records that, and `mise
+# check` keeps saying so until a printed bearing settles it.
+CLEARANCE = measured("clearance")
 
 # Gap between neighbouring elements, as a fraction of one element. 0 is
 # touching. Some slack keeps them from binding as the races flex.
-SPACING = 0.05
+SPACING = measured("spacing")
 
 # Break on the bore and rim edges. Clamped down automatically when a section is
 # too thin to give this much up, so it is safe to leave alone.
@@ -236,6 +244,52 @@ TURNTABLE_POST = Bearing(
         length=18,
         thread="M12",  # ISO 261 coarse
         external=True,  # a stud: it screws into a base
+    ),
+    **_COMMON,
+)
+
+
+# ============================================================================
+# pvc_turntable_post.py — a 10 in top on a stud that screws into 1" PVC
+# ============================================================================
+# The same idea as turntable_post, scaled to a real base: instead of an M12
+# bolt, the stud screws into a piece of 1" Schedule 40 PVC — glue a 1" FNPT
+# female adapter onto a length of 1" pipe and this threads straight into it.
+#
+# 1" NPT is a *tapered* pipe thread, and this stud is cut straight instead —
+# `_pipe.py` has the full reasoning (bd_warehouse cannot draw the taper at
+# all, and the taper only moves the diameter about a millimetre across the
+# length that engages, which a straight thread centred on that span already
+# sits inside of).
+#
+# A 32.9 mm stand-in thread is almost 3x fatter than the M12 above, so the
+# inner race has to grow to match: 22 mm races leave it 52.7 mm across at the
+# boss's face, ~20 mm clear of the thread, and ~10 mm of wall at the thread
+# root — several times the two-perimeter floor, not a bare skin over the
+# thread.
+#
+# The plate also grows, from 100 to 254 mm (10 in), which more than doubles
+# the cantilever past the bearing edge (28 mm on turntable_post, 67 mm here).
+# Plate thickness goes from 4 to 8 mm to hold roughly the same span-to-
+# thickness ratio rather than let a much bigger disc sag on the same section.
+
+PVC_TURNTABLE_POST = Bearing(
+    bore=10,  # a through hole down the middle of the stud
+    od=120,  # the bearing
+    width=16,
+    element="dumbbell",
+    race_t=22,  # fat races: the inner one has to carry a 1" NPT stand-in
+    element_d=12,
+    plate=Plate(
+        diameter=254,  # 10 in — the whole top, across
+        thickness=8,
+        holes=6,
+        hole_d=4.5,
+    ),
+    boss=Boss(
+        length=24,
+        thread="1 NPT",  # straight stand-in for 1" Schedule 40 PVC — see _pipe.py
+        external=True,  # a stud: it screws into the PVC fitting
     ),
     **_COMMON,
 )
