@@ -1,0 +1,16 @@
+# Dimensions whose provenance is the interesting part: reasoned, not measured
+# off a printed part yet. Everything else lives in _wing.py next to the
+# comment that explains it — see cadkit/measure.py for when a number belongs
+# here instead.
+
+[clearance]
+value = 0.25
+unit = "mm"
+how = "REFERENCE.md's clearance-hole table (+/-0.25mm); untested for a printed socket against real PVC at this OD"
+provisional = true
+
+[socket_depth]
+value = 22.0
+unit = "mm"
+how = "typical PVC slip-fit socket depth is roughly 1x the pipe OD; this is engagement length added on top of Wing.min_reach, the separate point where a mouth pulls clear of its neighbour (varies with wrist_angle/finger_angle_step). Also now a blind pocket depth, not a through-bore. Not dry-fitted."
+provisional = true
