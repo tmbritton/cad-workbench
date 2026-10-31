@@ -1,0 +1,14 @@
+# Fit provenance and the still-provisional fastener size. The 14.6 mm pipe OD
+# and 30 mm insertion are user-supplied; the 16.4 mm bore passed an ASA coupon.
+
+[clearance]
+value = 0.90
+unit = "mm"
+how = "The user printed an ASA coupon with a 16.4 mm nominal bore, and confirmed that the remeasured 14.6 mm OD pipe fits. Earlier 15.1 and 15.6 mm nominal bores did not admit it. Radial clearance is (16.4 - 14.6) / 2."
+provisional = false
+
+[screw_hole_d]
+value = 3.2
+unit = "mm"
+how = "M3 screw shaft clearance starting point; screw diameter/type not supplied and not test-fitted"
+provisional = true
