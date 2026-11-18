@@ -1,0 +1,23 @@
+[corner_reach]
+value = 6.0
+unit = "mm"
+how = "Design estimate for the horizontal extent of the rounded end corner; not dimensioned on the sketch. Chosen to join 3.2 mm ends to 4.5 mm shoulders smoothly."
+provisional = true
+
+[shoulder_end]
+value = 17.0
+unit = "mm"
+how = "Design estimate of where the level shoulder starts rising into the arch, from the outer end. Keeps the 4.5 mm hole (centre 14.65 mm) in the 4.5 mm strip. Not measured from the photo."
+provisional = true
+
+[crown_handle]
+value = 13.6
+unit = "mm"
+how = "Bezier handle chosen as 40% of the half-arch span to give a broad smooth crown. The user relaxed the originally supplied R46 after viewing the model; there is no circular-arc constraint now."
+provisional = true
+
+[shoulder_handle]
+value = 8.0
+unit = "mm"
+how = "Reach of the two horizontal-start handles on each quintic half-arch. Both lie at shoulder height to eliminate the curvature jump of the previous shoulder-to-circle transition. Design estimate, not measured."
+provisional = true
